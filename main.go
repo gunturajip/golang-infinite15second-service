@@ -4,33 +4,50 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"time"
 
 	h8HelperRand "github.com/novalagung/gubrak/v2"
 )
 
 func main() {
-	fmt.Println(h8HelperRand.RandomInt(10, 20))
+	randomWaterWind()
 
-	// get url request
-	// siapkan get request dengan url yang diinginkan
-	response, err := http.Get("https://jsonplaceholder.typicode.com/posts/1")
-	if err != nil {
-		log.Fatalln(err)
+	ticker := time.NewTicker(15 * time.Second)
+
+	// Creating channel using make
+	tickerChan := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-tickerChan:
+				return
+			// interval task
+			case <-ticker.C:
+				randomWaterWind()
+			}
+		}
+	}()
+
+	for {
 	}
-	defer response.Body.Close()
+	// // Calling Sleep() method
+	// time.Sleep(100 * time.Second)
 
-	// convert response ke format tipe data slice of byte
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// // Calling Stop() method
+	// ticker.Stop()
 
-	// print hasil convert response slice of byte ke string
-	fmt.Println(string(responseBody))
+	// // Setting the value of channel
+	// tickerChan <- true
 
+	// // Printed when the ticker is turned off
+	// fmt.Println("Ticker is turned off!")
+}
+
+func randomWaterWind() {
 	// post url request
 	// siapkan data yang ingin dikirim
 	data := map[string]interface{}{
@@ -60,11 +77,38 @@ func main() {
 	defer res.Body.Close()
 
 	// convert response ke format tipe data slice of byte
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	// print hasil convert response slice of byte ke string
-	fmt.Println(string(body))
+	// print hasil convert response slice of byte ke json
+	type Response struct {
+		Water int `json:"water"`
+		Wind  int `json:"wind"`
+	}
+	var response Response
+	_ = json.Unmarshal([]byte(body), &response)
+	exp, _ := json.MarshalIndent(Response{Water: response.Water, Wind: response.Wind}, "", "  ")
+	fmt.Println(string(exp))
+
+	// print hasil status dari response
+	var status_water string
+	var status_wind string
+	if response.Water < 5 {
+		status_water = "aman"
+	} else if response.Water >= 6 && response.Water <= 8 {
+		status_water = "siaga"
+	} else if response.Water > 8 {
+		status_water = "bahaya"
+	}
+	if response.Wind < 6 {
+		status_wind = "aman"
+	} else if response.Wind >= 7 && response.Wind <= 15 {
+		status_wind = "siaga"
+	} else if response.Wind > 15 {
+		status_wind = "bahaya"
+	}
+	fmt.Printf("status water : %s\n", status_water)
+	fmt.Printf("status wind : %s\n", status_wind)
 }
